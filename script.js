@@ -4,17 +4,35 @@ const cargainit = "CARGAINIT";
 const isEmpty = "NO HAY VALOR EN EL CAMPO"
 const isTest = "_D";
 const validNull = "";
+const CMIT = "MKYOP_CMIT_DELTA";
+const MEIT = "MKYOP_MEIT_DELTA";
+const MITR = "MKYOP_MITR_DELTA";
+const RSCE = "MKYOP_RSCE_DELTA";
 const capabilityLength = 12;
 const gfValidationPriorityNumber = 0;
 //Variables 
 let contenido = [];
 let fechaArchivo;
+let especificarArchivos = document.getElementById("flexSwitchCheckChecked");
+
+//Saber que archivos se requieren en especifico
+const archivosSeleccionados = async ()=>{
+  let archivos = [];
+  for(let i=0; i<=3; i++){
+    if(document.getElementById(`flexCheck_${i}`).checked){
+      archivos.push(`flexCheck_${i}`);
+    }
+  }
+  console.log("Obtener checks: "+archivos)
+  return archivos;
+}
 
 //Logica para leer el archivo generador
 const excelInput = document.getElementById("xlxs");
 excelInput.addEventListener('read', async function(contenido){
+  
   contenido = await readXlsxFile(excelInput.files[0]);
-  //contenido = content;
+  let checks = await archivosSeleccionados();
   contenido = verifyArray(contenido);
   fechaArchivo = extractDate(document.getElementById('uploadDate'));
   forTest = verifyCheck(document.getElementById('checkTestBox'))
@@ -26,38 +44,48 @@ excelInput.addEventListener('read', async function(contenido){
   let cmit = mapCMIT(alertArray(contenido));
 
   //Descargar los archivos
-  //CMIT
   var enlace = document.createElement("a");
-  enlace.setAttribute("href", "data:text/plain;charset=utf-8,"+ cmit.replace(/,/g, "\n"));
-  enlace.setAttribute("download", `MKYOP_CMIT_DELTA_${fechaArchivo}${forTest ? isTest:""}.txt`);
-  enlace.style.display = "none";
-  document.body.appendChild(enlace);
-  enlace.click();
-  //MEIT
-  enlace.setAttribute("href", "data:text/plain;charset=utf-8,"+ meit.replace(/,/g, "\n"));
-  enlace.setAttribute("download", `MKYOP_MEIT_DELTA_${fechaArchivo}${forTest ? isTest:""}.txt`);
-  enlace.style.display = "none";
-  document.body.appendChild(enlace);
-  enlace.click();
-   //MITR
-   enlace.setAttribute("href", "data:text/plain;charset=utf-8,"+ mitr.replace(/,/g, "\n"));
-   enlace.setAttribute("download", `MKYOP_MITR_DELTA_${fechaArchivo}${forTest ? isTest:""}.txt`);
-   enlace.style.display = "none";
-   document.body.appendChild(enlace);
-   enlace.click();
-  //RSCE
-   enlace.setAttribute("href", "data:text/plain;charset=utf-8,"+ rsce.replace(/,/g, "\n"));
-   enlace.setAttribute("download", `MKYOP_RSCE_DELTA_${fechaArchivo}${forTest ? isTest:""}.txt`);
-   enlace.style.display = "none";
-   document.body.appendChild(enlace);
-   enlace.click();
+  if(especificarArchivos){
+    for(let h=0; h<checks.length; h++){
+      switch(checks[h]){
+        case 'flexCheck_0':
+          downloadFileMapped(meit, MEIT, fechaArchivo, forTest);
+        break;
+        case 'flexCheck_1':
+          downloadFileMapped(rsce, RSCE, fechaArchivo, forTest);
+        break;
+        case 'flexCheck_2':
+          downloadFileMapped(cmit, CMIT, fechaArchivo, forTest);
+        break;
+        case 'flexCheck_3':
+          downloadFileMapped(mitr, MITR, fechaArchivo, forTest);
+        break;
+        default: console.error("No se encontraron elementos a descargar")
+      }
+    }
+  }else{
+    //Descarga todos
+    downloadFileMapped(cmit, CMIT, fechaArchivo, forTest);
+    downloadFileMapped(meit, MEIT, fechaArchivo, forTest);
+    downloadFileMapped(mitr, MITR, fechaArchivo, forTest);
+    downloadFileMapped(rsce, RSCE, fechaArchivo, forTest);
+  }
+
+  function downloadFileMapped(tabla, nomenclatura, fecha, isForTest){
+    enlace.setAttribute("href", "data:text/plain;charset=utf-8,"+ tabla.replace(/,/g, "\n"));
+    enlace.setAttribute("download", `${nomenclatura}_${fecha}${isForTest ? isTest:""}.txt`);
+    enlace.style.display = "none";
+    document.body.appendChild(enlace);
+    enlace.click();
+  };
 });
 
 //Crear los archivos.
 const crearArchivos = document.getElementById("btnCrear");
-crearArchivos.addEventListener('click', ()=>{
- excelInput.dispatchEvent(new CustomEvent('read'));
-});
+crearArchivos.addEventListener(
+  'click', 
+  ()=>{excelInput.dispatchEvent(new CustomEvent('read', archivosSeleccionados));}
+);
 
 //Limpia valores nulos
 function verifyArray(recived){
